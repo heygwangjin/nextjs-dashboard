@@ -1,6 +1,6 @@
+import { lusitana } from '@/app/lib/fonts';
 import { cn } from '@/app/lib/utils';
 import Link from 'next/link';
-import { lusitana } from '@/app/ui/fonts';
 
 interface Breadcrumb {
   label: string;
@@ -21,7 +21,7 @@ export default function Breadcrumbs({
             key={breadcrumb.href}
             aria-current={breadcrumb.active}
             className={cn(
-              breadcrumb.active ? 'text-gray-900' : 'text-gray-500'
+              breadcrumb.active ? 'text-gray-900' : 'text-gray-500',
             )}
           >
             <Link href={breadcrumb.href}>{breadcrumb.label}</Link>

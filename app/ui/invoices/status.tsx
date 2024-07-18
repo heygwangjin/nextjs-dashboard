@@ -1,5 +1,5 @@
-import { CheckIcon, ClockIcon } from '@heroicons/react/24/outline';
 import { cn } from '@/app/lib/utils';
+import { CheckIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 export default function InvoiceStatus({ status }: { status: string }) {
   return (
