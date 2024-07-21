@@ -7,38 +7,67 @@ import { z } from 'zod';
 
 const FormSchema = z.object({
   id: z.string(),
-  customerId: z.string(),
-  amount: z.coerce.number(),
-  status: z.enum(['pending', 'paid']),
+  customerId: z.string({
+    message: 'Please select a customer.',
+  }),
+  amount: z.coerce.number().gt(0, {
+    message: 'Please enter an amount greater than $0.',
+  }),
+  status: z.enum(['pending', 'paid'], {
+    message: 'Please select an invoice status.',
+  }),
   date: z.string(),
 });
 
 const CreateInvoice = FormSchema.omit({ id: true, date: true });
 const UpdateInvoice = FormSchema.omit({ id: true, date: true });
 
-export async function createInovice(formData: FormData) {
+export type State = {
+  errors?: {
+    customerId?: string[];
+    amount?: string[];
+    status?: string[];
+  };
+  message?: string | null;
+};
+
+export async function createInovice(prevState: State, formData: FormData) {
   const rawFormData = Object.fromEntries(formData.entries());
 
-  const { customerId, amount, status } = CreateInvoice.parse({
+  // Validate form using Zod
+  const validatedFields = CreateInvoice.safeParse({
     customerId: rawFormData.customerId,
     amount: rawFormData.amount,
     status: rawFormData.status,
   });
 
+  // If form validation fails, return errors early. Otherwise, continue.
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Missing Fields. Failed to Create Invoice.',
+    };
+  }
+
+  // Prepare data for insertion into the database
+  const { customerId, amount, status } = validatedFields.data;
   const amountInCents = amount * 100;
   const date = new Date().toISOString().split('T')[0];
 
+  // Insert data into the database
   try {
     await sql`
     INSERT INTO invoices (customer_id, amount, status, date)
     VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
   `;
   } catch (error) {
+    // If a database error occurs, return a more specific error.
     return {
       message: 'Database Error: Failed to Create Invoice',
     };
   }
 
+  // Revalidate the cache for the dashboard layout and redirect the user.
   revalidatePath('/dashboard', 'layout');
   redirect('/dashboard/invoices');
 }
